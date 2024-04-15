@@ -1,0 +1,9 @@
+<div [ngSwitch]="pageInUse">
+  <articles *ngSwitchCase="'articles'" [userSession]="userSession"></articles>
+  <users *ngSwitchCase="'users'" [userSession]="userSession"></users>
+  <publish *ngSwitchCase="'publish'" [userSession]="userSession"></publish>
+  <avaliations
+    *ngSwitchCase="'avaliations'"
+    [userSession]="userSession"
+  ></avaliations>
+</div>

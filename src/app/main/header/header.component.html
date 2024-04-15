@@ -1,0 +1,56 @@
+<section
+  style="
+    height: 80px;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 3dvw;
+    align-items: center;
+    box-shadow: 0px 4px 10px rgb(0, 0, 0, 25%);
+  "
+>
+  <span style="font-size: 22px; color: rgb(70, 87, 184)"> FeedBack Forge </span>
+  <section style="display: flex; gap: 10px">
+    <button
+      *ngIf="userSession.role !== 'evaluator'"
+      (click)="openPage('articles')"
+      mat-button
+      color="primary"
+    >
+      Artigos
+    </button>
+    <button
+      *ngIf="userSession.role == 'admin'"
+      (click)="openPage('users')"
+      mat-button
+      color="primary"
+    >
+      Usuários
+    </button>
+    <button
+      *ngIf="userSession.role !== 'author'"
+      (click)="openPage('avaliations')"
+      mat-button
+      color="primary"
+    >
+      Avaliações
+    </button>
+    <button
+      *ngIf="userSession.role == 'admin'"
+      (click)="openPage('publish')"
+      mat-button
+      color="primary"
+    >
+      Publicar
+    </button>
+  </section>
+
+  <section style="display: flex; align-items: center; gap: 30px">
+    <div style="display: flex; align-items: center; gap: 5px">
+      <mat-icon svgIcon="account-circle"></mat-icon>
+      <span>{{ userSession.name }}</span>
+    </div>
+    <button mat-raised-button color="primary" (click)="logout()">
+      <mat-icon svgIcon="location-exit"></mat-icon> Sair
+    </button>
+  </section>
+</section>

@@ -1,0 +1,145 @@
+<div
+  style="
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 5px 17px rgba(0, 0, 0, 0.2);
+    margin: 1.48vh 1.56vw 1.48vh;
+    height: 60px;
+    border-radius: 8px;
+    padding: 5px 20px;
+  "
+>
+  <span style="font-size: 20px">Usuários</span>
+  <button mat-raised-button color="primary" (click)="createUser = true">
+    Adicionar
+  </button>
+</div>
+
+<section
+  *ngIf="!createUser; else createNewArticle"
+  style="margin: 1.48vh 1.56vw 1.48vh; height: 75dvh"
+>
+  <mat-form-field>
+    <mat-label>Filtro</mat-label>
+    <input matInput (keyup)="applyFilter($event)" #input />
+  </mat-form-field>
+
+  <div class="mat-elevation-z8" style="border-radius: 8px; padding: 10px">
+    <table mat-table [dataSource]="dataSource" matSort>
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
+        <td mat-cell *matCellDef="let row">{{ row.id }}</td>
+      </ng-container>
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Nome</th>
+        <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+      </ng-container>
+      <ng-container matColumnDef="email">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>E-Mail</th>
+        <td mat-cell *matCellDef="let row">{{ row.email }}</td>
+      </ng-container>
+      <ng-container matColumnDef="password">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Password</th>
+        <td mat-cell *matCellDef="let row">{{ row.password }}</td>
+      </ng-container>
+      <ng-container matColumnDef="role">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Tipo</th>
+        <td mat-cell *matCellDef="let row">{{ row.role }}</td>
+      </ng-container>
+      <ng-container matColumnDef="options" stickyEnd>
+        <th mat-header-cell *matHeaderCellDef aria-label="row actions">
+          &nbsp;
+        </th>
+        <td mat-cell *matCellDef="let element">
+          <button mat-icon-button [matMenuTriggerFor]="menu">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+          <mat-menu #menu="matMenu">
+            <button mat-menu-item (click)="onEdit(element)">
+              <mat-icon svgIcon="pencil"></mat-icon>
+              <span>Editar</span>
+            </button>
+            <button mat-menu-item (click)="onDelete(element)">
+              <mat-icon svgIcon="trash-can-outline"></mat-icon>
+              <span>Excluir</span>
+            </button>
+          </mat-menu>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+
+      <tr class="mat-row" *matNoDataRow>
+        <td style="margin-left: 20px" class="mat-cell" colspan="4">
+          No data matching the filter "{{ input.value }}"
+        </td>
+      </tr>
+    </table>
+
+    <mat-paginator
+      [pageSizeOptions]="[5, 10, 25, 100]"
+      aria-label="Select page of articles"
+    ></mat-paginator>
+  </div>
+</section>
+<ng-template #createNewArticle>
+  <section
+    style="
+      margin: 1.48vh 1.56vw 1.48vh;
+      height: 75dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    "
+  >
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        width: 600px;
+        padding: 15px;
+        box-shadow: 0 5px 17px rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+      "
+    >
+      <mat-form-field style="width: 100%">
+        <mat-label>Nome</mat-label>
+        <input matInput [(ngModel)]="userSelected.name" />
+      </mat-form-field>
+      <mat-form-field style="width: 100%">
+        <mat-label>E-Mail</mat-label>
+        <input matInput [(ngModel)]="userSelected.email" />
+      </mat-form-field>
+      <mat-form-field style="width: 100%">
+        <mat-label>Password</mat-label>
+        <input matInput [(ngModel)]="userSelected.password" />
+      </mat-form-field>
+      <mat-radio-group
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: space-around;
+          margin-bottom: 20px;
+          width: 90%;
+        "
+        [(ngModel)]="userSelected.role"
+      >
+        <mat-radio-button value="author">Autor</mat-radio-button>
+        <mat-radio-button value="admin">Administrador</mat-radio-button>
+        <mat-radio-button value="evaluator">Avaliador</mat-radio-button>
+      </mat-radio-group>
+      <div style="display: flex; gap: 10px">
+        <button mat-raised-button (click)="createUser = false">Cancelar</button>
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="saveUser(userSelected); createUser = false"
+        >
+          Salvar
+        </button>
+      </div>
+    </div>
+  </section>
+</ng-template>
