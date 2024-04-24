@@ -9,7 +9,13 @@ import { MatChipEditedEvent, MatChipInputEvent } from '@angular/material/chips';
 import { Author } from 'src/app/models/author.model';
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { EvaluationModalComponent } from './evaluation-modal/evaluation-modal.component';
+import { AvaliationModel } from 'src/app/models/avaliation.model';
 
+export interface DialogData {
+  evaluators: UserModel[];
+}
 @Component({
   selector: 'articles',
   templateUrl: './articles.component.html',
@@ -39,7 +45,7 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
   @ViewChild(MatSort) sort: MatSort = new MatSort();
 
-  constructor(private http: HttpClient) {
+  constructor(private http: HttpClient, public dialog: MatDialog) {
     const fakeArticles: Article[] = [
       {
         id: 1,
@@ -50,6 +56,8 @@ export class ArticlesComponent implements OnInit, OnDestroy {
         status: 'Published',
         link: 'https://www.google.com',
         date: new Date(),
+        evaluators: [],
+        nota: 0,
       },
       {
         id: 2,
@@ -59,6 +67,8 @@ export class ArticlesComponent implements OnInit, OnDestroy {
         status: 'Recused',
         link: 'https://www.google.com/aloha',
         date: new Date(),
+        evaluators: [],
+        nota: 0,
       },
       {
         id: 3,
@@ -68,6 +78,19 @@ export class ArticlesComponent implements OnInit, OnDestroy {
         status: 'Pending',
         link: 'https://www.google.com/ola',
         date: new Date(),
+        evaluators: [],
+        nota: 0,
+      },
+      {
+        id: 4,
+        title: 'Fake Title 4',
+        authors: [{ name: 'Antonio' }],
+        resume: 'Sit amet consectetur...',
+        status: 'Draft',
+        link: 'https://www.google.com/ola',
+        date: new Date(),
+        evaluators: [],
+        nota: 0,
       },
       // Add more fake articles as needed
     ];
@@ -77,7 +100,7 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.getArticles(this.userSession.role);
+    this.getArticles(this.userSession);
   }
 
   ngOnDestroy(): void {
@@ -91,9 +114,12 @@ export class ArticlesComponent implements OnInit, OnDestroy {
     this.dataSource.sort = this.sort;
   }
 
-  getArticles(role: string): void {
+  getArticles(user: UserModel): void {
+    const path: string =
+      user.role == 'admin' ? 'findAll' : `findAllById/${user.id}`;
+
     this.getArticlesSub = this.http
-      .get('http://localhost:8080/articles/findAll')
+      .get(`http://localhost:8080/articles/${path}`)
       .subscribe({
         next: (data: any) => {
           console.log(data);
@@ -120,26 +146,38 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   }
 
   saveArticle(article: Article) {
-    console.log(article);
-    this.dataSource.data.push(article);
-    this.dataSource._updateChangeSubscription();
+    this.getArticlesSub = this.http
+      .get('http://localhost:8080/articles/save')
+      .subscribe({
+        next: (data: any) => {
+          this.dataSource.data.push(article);
+          this.dataSource._updateChangeSubscription();
+        },
+        error: (error: any) => {
+          console.log(error);
+        },
+      });
     this.article = new Article();
     this.createArticle = false;
   }
 
   onEdit(article: Article) {
-    console.log(article);
     this.article = article;
-    article.authors = [
-      { name: 'jonathan' },
-      { name: 'joseph' },
-      { name: 'james' },
-    ];
     this.createArticle = true;
   }
 
   onDelete(article: Article) {
-    console.log(article);
+    this.http.delete(`http://localhost:8080/articles/${article.id}`).subscribe({
+      next: (data: any) => {
+        const index = this.dataSource.data.push(article);
+        if (index >= 0) {
+          this.dataSource.data.splice(index, 1);
+        }
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   getColorStatus(status: string) {
@@ -165,7 +203,6 @@ export class ArticlesComponent implements OnInit, OnDestroy {
       this.article.authors.push({ name: value });
     }
 
-    // Clear the input value
     event.chipInput!.clear();
   }
 
@@ -180,7 +217,6 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   edit(author: Author, event: MatChipEditedEvent) {
     const value = event.value.trim();
 
-    // Remove fruit if it no longer has a name
     if (!value) {
       this.remove(author);
       return;
@@ -195,5 +231,43 @@ export class ArticlesComponent implements OnInit, OnDestroy {
 
   concacAuthors(authors: Author[]) {
     return authors.map((author) => author.name).join(', ');
+  }
+
+  openDialog(articleSelected: Article): void {
+    this.article = articleSelected;
+    const dialogRef = this.dialog.open(EvaluationModalComponent, {
+      data: {
+        evaluators: [],
+      } as DialogData,
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      this.handleEvaluation(result);
+    });
+  }
+
+  handleEvaluation(users: UserModel[]) {
+    users.forEach((user) => {
+      let avaliation: AvaliationModel = new AvaliationModel();
+      avaliation.user_id = user.id;
+      avaliation.article_id = this.article.id;
+      this.article.evaluators.push(avaliation);
+    });
+    console.log(this.article);
+    this.article.status = 'Pending';
+    this.sendEvaluation(this.article);
+  }
+
+  sendEvaluation(article: Article) {
+    this.http
+      .post('http://localhost:8080/articles/sendToEvaluation', article)
+      .subscribe({
+        next: (data: any) => {
+          this.getArticles(this.userSession);
+        },
+        error: (error: any) => {
+          console.log(error);
+        },
+      });
   }
 }

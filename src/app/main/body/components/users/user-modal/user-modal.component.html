@@ -1,0 +1,7 @@
+<div mat-dialog-content style="width: 400px">
+  Deseja mesmo excluir o usuário "{{ data.username }}"?
+  <div mat-dialog-actions style="justify-content: center; margin-top: 20px">
+    <button mat-button (click)="dialogRef.close()">Não</button>
+    <button mat-button [mat-dialog-close]="true" cdkFocusInitial>Sim</button>
+  </div>
+</div>

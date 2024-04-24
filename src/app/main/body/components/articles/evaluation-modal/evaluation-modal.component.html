@@ -1,0 +1,43 @@
+<div mat-dialog-content style="width: 400px">
+  <mat-form-field
+    class="example-chip-list"
+    appearance="fill"
+    style="width: 100%"
+  >
+    <mat-label>Avaliadores</mat-label>
+    <mat-chip-grid #chipGrid aria-label="Evaluators selection">
+      <mat-chip-row
+        *ngFor="let evaluators of evaluators"
+        (removed)="remove(evaluators)"
+      >
+        {{ evaluators.username }}
+        <button matChipRemove [attr.aria-label]="'remove ' + evaluators">
+          <mat-icon>cancel</mat-icon>
+        </button>
+      </mat-chip-row>
+    </mat-chip-grid>
+    <input
+      placeholder="Novo Avaliador..."
+      #evaluatorInput
+      [formControl]="evaluatorCtrl"
+      [matChipInputFor]="chipGrid"
+      [matAutocomplete]="auto"
+      [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+      (matChipInputTokenEnd)="add($event)"
+    />
+    <mat-autocomplete
+      #auto="matAutocomplete"
+      (optionSelected)="selected($event)"
+    >
+      <mat-option *ngFor="let evaluator of allEvaluator" [value]="evaluator">
+        {{ evaluator.username }}
+      </mat-option>
+    </mat-autocomplete>
+  </mat-form-field>
+</div>
+<div mat-dialog-actions>
+  <button mat-button (click)="dialogRef.close()">Cancelar</button>
+  <button mat-button [mat-dialog-close]="evaluators" cdkFocusInitial>
+    Salvar
+  </button>
+</div>

@@ -69,9 +69,20 @@
           </button>
           <mat-menu #menu="matMenu">
             <button
+              *ngIf="userSession.role == 'admin'"
+              [disabled]="element.status != 'Draft'"
+              mat-menu-item
+              (click)="openDialog(element)"
+            >
+              <mat-icon svgIcon="account-arrow-left-outline"></mat-icon>
+              <span>Avaliadores</span>
+            </button>
+            <button
               mat-menu-item
               (click)="onEdit(element)"
-              [disabled]="element.status == 'Published'"
+              [disabled]="
+                element.status == 'Published' || userSession.role != 'author'
+              "
             >
               <mat-icon svgIcon="pencil"></mat-icon>
               <span>Editar</span>

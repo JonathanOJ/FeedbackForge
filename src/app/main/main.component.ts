@@ -15,14 +15,12 @@ export class MainComponent implements OnInit {
   constructor(private cookies: CookieService, private router: Router) {}
 
   ngOnInit(): void {
-    // if (!this.cookies.check('userSession')) {
-    //   this.router.navigate(['/login']);
-    // } else {
-    //   this.userSession = JSON.parse(this.cookies.get('userSession'));
-    //   this.userSession.role == 'admin';
-    // }
-    this.userSession.role = 'admin';
-    this.userSession.name = 'admin';
+    if (!this.cookies.check('userSession')) {
+      this.router.navigate(['/login']);
+    } else {
+      this.userSession = JSON.parse(this.cookies.get('userSession'));
+      this.userSession.role == 'admin';
+    }
     this.setPageInUse(this.userSession.role);
   }
 

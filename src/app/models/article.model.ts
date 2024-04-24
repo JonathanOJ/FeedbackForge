@@ -1,4 +1,6 @@
 import { Author } from './author.model';
+import { AvaliationModel } from './avaliation.model';
+import { UserModel } from './user.model';
 
 export class Article {
   id: number = 0;
@@ -11,5 +13,7 @@ export class Article {
       name: '',
     },
   ];
-  status: string = '';
+  evaluators: AvaliationModel[] = [];
+  nota: number = 0;
+  status: string = 'Draft';
 }

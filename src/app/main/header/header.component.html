@@ -27,7 +27,7 @@
       Usuários
     </button>
     <button
-      *ngIf="userSession.role !== 'author'"
+      *ngIf="userSession.role == 'evaluator'"
       (click)="openPage('avaliations')"
       mat-button
       color="primary"
@@ -40,14 +40,14 @@
       mat-button
       color="primary"
     >
-      Publicar
+      Publicações
     </button>
   </section>
 
   <section style="display: flex; align-items: center; gap: 30px">
     <div style="display: flex; align-items: center; gap: 5px">
       <mat-icon svgIcon="account-circle"></mat-icon>
-      <span>{{ userSession.name }}</span>
+      <span>{{ userSession.username }}</span>
     </div>
     <button mat-raised-button color="primary" (click)="logout()">
       <mat-icon svgIcon="location-exit"></mat-icon> Sair

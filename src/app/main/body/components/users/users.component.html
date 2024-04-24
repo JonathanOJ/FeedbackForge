@@ -60,7 +60,7 @@
               <mat-icon svgIcon="pencil"></mat-icon>
               <span>Editar</span>
             </button>
-            <button mat-menu-item (click)="onDelete(element)">
+            <button mat-menu-item (click)="openDialog(element)">
               <mat-icon svgIcon="trash-can-outline"></mat-icon>
               <span>Excluir</span>
             </button>
@@ -106,7 +106,7 @@
     >
       <mat-form-field style="width: 100%">
         <mat-label>Nome</mat-label>
-        <input matInput [(ngModel)]="userSelected.name" />
+        <input matInput [(ngModel)]="userSelected.username" />
       </mat-form-field>
       <mat-form-field style="width: 100%">
         <mat-label>E-Mail</mat-label>

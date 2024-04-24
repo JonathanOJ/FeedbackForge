@@ -34,7 +34,7 @@ export class LoginComponent implements OnDestroy {
 
   handleCreateUser() {
     this.createUserSub = this.httpClient
-      .post('http://localhost:8080/user/create', this.user)
+      .post('http://localhost:8080/user/save', this.user)
       .subscribe({
         next: (data: any) => {
           console.log(data);
@@ -49,17 +49,17 @@ export class LoginComponent implements OnDestroy {
 
   login() {
     this.router.navigate(['/home']);
-    // this.loginSub = this.httpClient
-    //   .post('http://localhost:8080/user/login', this.user)
-    //   .subscribe({
-    //     next: (data: any) => {
-    //       console.log(data);
-    //       this.cookies.set('userSession', JSON.stringify(data));
-    //       this.router.navigate(['/home']);
-    //     },
-    //     error: (error: any) => {
-    //       console.log(error);
-    //     },
-    //   });
+    this.loginSub = this.httpClient
+      .post('http://localhost:8080/user/login', this.user)
+      .subscribe({
+        next: (data: any) => {
+          console.log(data);
+          this.cookies.set('userSession', JSON.stringify(data));
+          this.router.navigate(['/home']);
+        },
+        error: (error: any) => {
+          console.log(error);
+        },
+      });
   }
 }

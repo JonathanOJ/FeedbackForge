@@ -1,4 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Router } from '@angular/router';
 import { UserModel } from 'src/app/models/user.model';
 
 @Component({
@@ -10,11 +11,11 @@ export class HeaderComponent {
   @Input() userSession: UserModel = new UserModel();
   @Output() changePage: EventEmitter<string> = new EventEmitter<string>();
 
-  constructor() {}
+  constructor(private router: Router) {}
 
   logout(): void {
     // this.cookies.delete('userSession');
-    // this.router.navigate(['/login']);
+    this.router.navigate(['/login']);
   }
 
   openPage(page: string): void {

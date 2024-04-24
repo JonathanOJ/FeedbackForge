@@ -27,6 +27,12 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatChipsModule } from '@angular/material/chips';
 import { ArticlesComponent } from './main/body/components/articles/articles.component';
+import { EvaluationModalComponent } from './main/body/components/articles/evaluation-modal/evaluation-modal.component';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { ReactiveFormsModule } from '@angular/forms';
+import { UserModalComponent } from './main/body/components/users/user-modal/user-modal.component';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @NgModule({
   declarations: [
@@ -39,6 +45,8 @@ import { ArticlesComponent } from './main/body/components/articles/articles.comp
     UsersComponent,
     AvaliationsComponent,
     PublishComponent,
+    EvaluationModalComponent,
+    UserModalComponent,
   ],
   imports: [
     BrowserModule,
@@ -59,6 +67,10 @@ import { ArticlesComponent } from './main/body/components/articles/articles.comp
     MatSidenavModule,
     MatMenuModule,
     MatChipsModule,
+    MatDialogModule,
+    MatAutocompleteModule,
+    ReactiveFormsModule,
+    MatSnackBarModule,
   ],
   providers: [],
   bootstrap: [AppComponent],
