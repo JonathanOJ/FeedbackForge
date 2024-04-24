@@ -48,7 +48,6 @@ export class LoginComponent implements OnDestroy {
   }
 
   login() {
-    this.router.navigate(['/home']);
     this.loginSub = this.httpClient
       .post('http://localhost:8080/user/login', this.user)
       .subscribe({

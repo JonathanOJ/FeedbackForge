@@ -31,48 +31,7 @@ export class PublishComponent implements OnInit {
   @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
   @ViewChild(MatSort) sort: MatSort = new MatSort();
 
-  constructor(private http: HttpClient) {
-    const fakeArticles: Article[] = [
-      {
-        id: 1,
-        title: 'Fake Title 1',
-        authors: [{ name: 'John Doe' }, { name: 'Jane Doe' }],
-        resume:
-          'Lorem ipsum dolor sit amet consectetur adipiscing elit. Nulla vitae nunc nec odio ultricies tincidunt. Lorem ipsum dolor sit amet consectetur adipiscing elit. Nulla vitae nunc nec odio ultricies tincidunt.',
-        status: 'Published',
-        link: 'https://www.google.com',
-        date: new Date(),
-        evaluators: [],
-        nota: 0,
-      },
-      {
-        id: 2,
-        title: 'Fake Title 2',
-        authors: [{ name: 'Jane Doe' }],
-        resume: 'Dolor sit amet...',
-        status: 'Recused',
-        link: 'https://www.google.com/aloha',
-        date: new Date(),
-        evaluators: [],
-        nota: 0,
-      },
-      {
-        id: 3,
-        title: 'Fake Title 3',
-        authors: [{ name: 'John Doe' }],
-        resume: 'Sit amet consectetur...',
-        status: 'Pending',
-        link: 'https://www.google.com/ola',
-        date: new Date(),
-        evaluators: [],
-        nota: 0,
-      },
-      // Add more fake articles as needed
-    ];
-
-    // Assign the fake data to the dataSource
-    this.dataSource = new MatTableDataSource<Article>(fakeArticles);
-  }
+  constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
     this.getArticlesToPublish();

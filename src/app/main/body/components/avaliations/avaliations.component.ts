@@ -45,57 +45,7 @@ export class AvaliationsComponent implements AfterViewInit, OnInit {
   @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
   @ViewChild(MatSort) sort: MatSort = new MatSort();
 
-  constructor(private snackBar: MatSnackBar, private http: HttpClient) {
-    const fakeArticles: Article[] = [
-      {
-        id: 1,
-        title: 'Fake Title 1',
-        authors: [{ name: 'John Doe' }, { name: 'Jane Doe' }],
-        resume:
-          'Lorem ipsum dolor sit amet consectetur adipiscing elit. Nulla vitae nunc nec odio ultricies tincidunt. Lorem ipsum dolor sit amet consectetur adipiscing elit. Nulla vitae nunc nec odio ultricies tincidunt.',
-        status: 'Published',
-        link: 'https://www.google.com',
-        evaluators: [],
-        date: new Date(),
-        nota: 0,
-      },
-      {
-        id: 2,
-        title: 'Fake Title 2',
-        authors: [{ name: 'Jane Doe' }],
-        resume: 'Dolor sit amet...',
-        status: 'Recused',
-        link: 'https://www.google.com/aloha',
-        evaluators: [],
-        date: new Date(),
-        nota: 0,
-      },
-      {
-        id: 3,
-        title: 'Fake Title 3',
-        authors: [{ name: 'John Doe' }],
-        resume: 'Sit amet consectetur...',
-        status: 'Pending',
-        link: 'https://www.google.com/ola',
-        date: new Date(),
-        evaluators: [],
-        nota: 0,
-      },
-      {
-        id: 4,
-        title: 'Fake Title 4',
-        authors: [{ name: 'Antonio' }],
-        resume: 'Sit amet consectetur...',
-        status: 'Draft',
-        link: 'https://www.google.com/ola',
-        date: new Date(),
-        evaluators: [],
-        nota: 0,
-      },
-    ];
-
-    this.dataSource = new MatTableDataSource<Article>(fakeArticles);
-  }
+  constructor(private snackBar: MatSnackBar, private http: HttpClient) {}
 
   ngOnInit(): void {
     this.getArticlesToAvaliate();

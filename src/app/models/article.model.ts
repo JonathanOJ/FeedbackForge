@@ -8,12 +8,9 @@ export class Article {
   resume: string = '';
   link: string = '';
   date: Date = new Date();
-  authors: Author[] = [
-    {
-      name: '',
-    },
-  ];
+  authors: String = '';
   evaluators: AvaliationModel[] = [];
   nota: number = 0;
   status: string = 'Draft';
+  user: UserModel = new UserModel();
 }

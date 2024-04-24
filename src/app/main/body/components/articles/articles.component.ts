@@ -26,6 +26,7 @@ export class ArticlesComponent implements OnInit, OnDestroy {
 
   createArticle: boolean = false;
   article: Article = new Article();
+  articleAuthors: Author[] = [];
   addOnBlur = true;
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
 
@@ -45,59 +46,7 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
   @ViewChild(MatSort) sort: MatSort = new MatSort();
 
-  constructor(private http: HttpClient, public dialog: MatDialog) {
-    const fakeArticles: Article[] = [
-      {
-        id: 1,
-        title: 'Fake Title 1',
-        authors: [{ name: 'John Doe' }, { name: 'Jane Doe' }],
-        resume:
-          'Lorem ipsum dolor sit amet consectetur adipiscing elit. Nulla vitae nunc nec odio ultricies tincidunt. Lorem ipsum dolor sit amet consectetur adipiscing elit. Nulla vitae nunc nec odio ultricies tincidunt.',
-        status: 'Published',
-        link: 'https://www.google.com',
-        date: new Date(),
-        evaluators: [],
-        nota: 0,
-      },
-      {
-        id: 2,
-        title: 'Fake Title 2',
-        authors: [{ name: 'Jane Doe' }],
-        resume: 'Dolor sit amet...',
-        status: 'Recused',
-        link: 'https://www.google.com/aloha',
-        date: new Date(),
-        evaluators: [],
-        nota: 0,
-      },
-      {
-        id: 3,
-        title: 'Fake Title 3',
-        authors: [{ name: 'John Doe' }],
-        resume: 'Sit amet consectetur...',
-        status: 'Pending',
-        link: 'https://www.google.com/ola',
-        date: new Date(),
-        evaluators: [],
-        nota: 0,
-      },
-      {
-        id: 4,
-        title: 'Fake Title 4',
-        authors: [{ name: 'Antonio' }],
-        resume: 'Sit amet consectetur...',
-        status: 'Draft',
-        link: 'https://www.google.com/ola',
-        date: new Date(),
-        evaluators: [],
-        nota: 0,
-      },
-      // Add more fake articles as needed
-    ];
-
-    // Assign the fake data to the dataSource
-    this.dataSource = new MatTableDataSource<Article>(fakeArticles);
-  }
+  constructor(private http: HttpClient, public dialog: MatDialog) {}
 
   ngOnInit(): void {
     this.getArticles(this.userSession);
@@ -119,7 +68,7 @@ export class ArticlesComponent implements OnInit, OnDestroy {
       user.role == 'admin' ? 'findAll' : `findAllById/${user.id}`;
 
     this.getArticlesSub = this.http
-      .get(`http://localhost:8080/articles/${path}`)
+      .get(`http://localhost:8080/article/${path}`)
       .subscribe({
         next: (data: any) => {
           console.log(data);
@@ -146,33 +95,36 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   }
 
   saveArticle(article: Article) {
+    article.authors = this.concacAuthors(this.articleAuthors);
+    article.user = this.userSession;
     this.getArticlesSub = this.http
-      .get('http://localhost:8080/articles/save')
+      .post('http://localhost:8080/article/save', article)
       .subscribe({
         next: (data: any) => {
-          this.dataSource.data.push(article);
+          this.dataSource.data.push(data);
           this.dataSource._updateChangeSubscription();
+          this.createArticle = false;
+          this.article = new Article();
+          this.articleAuthors = [];
         },
         error: (error: any) => {
           console.log(error);
         },
       });
-    this.article = new Article();
-    this.createArticle = false;
   }
 
   onEdit(article: Article) {
     this.article = article;
+    console.log(this.article);
     this.createArticle = true;
   }
 
   onDelete(article: Article) {
-    this.http.delete(`http://localhost:8080/articles/${article.id}`).subscribe({
+    this.http.delete(`http://localhost:8080/article/${article.id}`).subscribe({
       next: (data: any) => {
-        const index = this.dataSource.data.push(article);
-        if (index >= 0) {
-          this.dataSource.data.splice(index, 1);
-        }
+        const index = this.dataSource.data.indexOf(article);
+        this.dataSource.data.splice(index, 1);
+        this.dataSource._updateChangeSubscription();
       },
       error: (error: any) => {
         console.log(error);
@@ -200,17 +152,17 @@ export class ArticlesComponent implements OnInit, OnDestroy {
       if (this.article.authors.length == 5) {
         return;
       }
-      this.article.authors.push({ name: value });
+      this.articleAuthors.push({ name: value });
     }
 
     event.chipInput!.clear();
   }
 
   remove(author: Author): void {
-    const index = this.article.authors.indexOf(author);
+    const index = this.articleAuthors.indexOf(author);
 
     if (index >= 0) {
-      this.article.authors.splice(index, 1);
+      this.articleAuthors.splice(index, 1);
     }
   }
 
@@ -223,9 +175,9 @@ export class ArticlesComponent implements OnInit, OnDestroy {
     }
 
     // Edit existing fruit
-    const index = this.article.authors.indexOf(author);
+    const index = this.articleAuthors.indexOf(author);
     if (index >= 0) {
-      this.article.authors[index].name = value;
+      this.articleAuthors[index].name = value;
     }
   }
 
@@ -260,7 +212,7 @@ export class ArticlesComponent implements OnInit, OnDestroy {
 
   sendEvaluation(article: Article) {
     this.http
-      .post('http://localhost:8080/articles/sendToEvaluation', article)
+      .post('http://localhost:8080/article/sendToEvaluation', article)
       .subscribe({
         next: (data: any) => {
           this.getArticles(this.userSession);
