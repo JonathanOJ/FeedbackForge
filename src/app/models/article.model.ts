@@ -1,5 +1,3 @@
-import { Author } from './author.model';
-import { AvaliationModel } from './avaliation.model';
 import { UserModel } from './user.model';
 
 export class Article {
@@ -9,8 +7,8 @@ export class Article {
   link: string = '';
   date: Date = new Date();
   authors: String = '';
-  evaluators: AvaliationModel[] = [];
   nota: number = 0;
   status: string = 'Draft';
+  avaliated: boolean = false;
   user: UserModel = new UserModel();
 }

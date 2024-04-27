@@ -39,6 +39,10 @@
         <mat-label>Senha</mat-label>
         <input type="password" matInput [(ngModel)]="user.password" />
       </mat-form-field>
+      <mat-form-field *ngIf="createUser" appearance="outline">
+        <mat-label>Confirmar senha</mat-label>
+        <input type="password" matInput [(ngModel)]="confirmPassword" />
+      </mat-form-field>
 
       <mat-radio-group
         *ngIf="createUser"
@@ -58,7 +62,7 @@
       <button
         mat-raised-button
         color="primary"
-        (click)="createUser ? handleCreateUser() : login()"
+        (click)="createUser ? handleInfo() : login()"
       >
         {{ createUser ? "CRIAR" : "LOGIN" }}
       </button>
@@ -72,7 +76,7 @@
           color: rgb(67 46 255);
           margin-top: 15px;
         "
-        >Esqueceu a senha ?</span
+        >Criar conta</span
       >
     </section>
   </div>

@@ -15,6 +15,7 @@ import { Observable, Subscription, map, startWith } from 'rxjs';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { HttpClient } from '@angular/common/http';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-evaluation-modal',
@@ -35,7 +36,8 @@ export class EvaluationModalComponent implements OnInit, OnDestroy {
   constructor(
     public dialogRef: MatDialogRef<EvaluationModalComponent>,
     @Inject(MAT_DIALOG_DATA) public data: DialogData,
-    private http: HttpClient
+    private http: HttpClient,
+    private snackBar: MatSnackBar
   ) {
     this.filteredEvaluators = this.evaluatorCtrl.valueChanges.pipe(
       startWith(null),
@@ -54,54 +56,30 @@ export class EvaluationModalComponent implements OnInit, OnDestroy {
   }
 
   getAvaluators() {
-    this.allEvaluator = [
-      {
-        id: 1,
-        username: 'John Doe',
-        email: 'jona@gmail.com',
-        role: 'Evaluator',
-        password: '123456',
-      },
-      {
-        id: 2,
-        username: 'Jane Doe',
-        email: 'gmail.com',
-        role: 'Evaluator',
-        password: '123456',
-      },
-      {
-        id: 3,
-        username: 'John Smith',
-        email: 'ksjakj@gmai..con',
-        role: 'Evaluator',
-        password: '123456',
-      },
-    ];
-
-    // this.http.get('http://localhost:3000/evaluation').subscribe({
-    //       next: (data: any) => {
-    //         console.log(data);
-    //          rateArticle = false
-    //       },
-    //       error: (error: any) => {
-    //         console.log(error);
-    //       },
-    //     });
+    this.http
+      .get('http://localhost:8080/user/findAllByRole/evaluator')
+      .subscribe({
+        next: (data: any) => {
+          this.allEvaluator = data;
+        },
+        error: (error: any) => {
+          console.log(error);
+        },
+      });
   }
 
   add(event: MatChipInputEvent): void {
     const value = (event.value || '').trim();
 
-    // Add the selected evaluator to the evaluators array
     const selectedEvaluator = this.allEvaluator.find(
       (evaluator) => evaluator.username === value
     );
-    console.log(this.evaluators);
     if (selectedEvaluator && this.evaluators.length < 3) {
       this.evaluators.push(selectedEvaluator);
+    } else {
+      this.openSnackBar('Apenas 3 avaliadores podem ser adicionados');
     }
 
-    // Clear the input value
     event.chipInput!.clear();
 
     this.evaluatorCtrl.setValue('');
@@ -128,7 +106,6 @@ export class EvaluationModalComponent implements OnInit, OnDestroy {
     if (selectedEvaluator && this.evaluators.length < 3) {
       this.evaluators.push(selectedEvaluator);
     }
-    console.log(this.evaluators);
 
     this.evaluatorInput.nativeElement.value = '';
     this.evaluatorCtrl.setValue('');
@@ -139,5 +116,9 @@ export class EvaluationModalComponent implements OnInit, OnDestroy {
     return this.allEvaluator.filter((evaluator) =>
       evaluator.username.toLowerCase().includes(filterValue)
     );
+  }
+
+  openSnackBar(message: string) {
+    this.snackBar.open(message, 'Fechar');
   }
 }

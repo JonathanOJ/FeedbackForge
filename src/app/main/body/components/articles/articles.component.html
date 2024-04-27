@@ -11,7 +11,12 @@
   "
 >
   <span style="font-size: 20px">Artigos</span>
-  <button mat-raised-button color="primary" (click)="createArticle = true">
+  <button
+    *ngIf="userSession.role == 'author'"
+    mat-raised-button
+    color="primary"
+    (click)="createArticle = true"
+  >
     Adicionar
   </button>
 </div>
@@ -49,6 +54,10 @@
         </th>
         <td mat-cell *matCellDef="let row">{{ row.date | date }}</td>
       </ng-container>
+      <ng-container matColumnDef="nota">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Nota</th>
+        <td mat-cell *matCellDef="let row">{{ row.nota }}</td>
+      </ng-container>
       <ng-container matColumnDef="status">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
         <td
@@ -81,14 +90,17 @@
               mat-menu-item
               (click)="onEdit(element)"
               [disabled]="
-                element.status == 'Published' ||
-                element.user.id != userSession.id
+                element.status != 'Draft' || element.user.id != userSession.id
               "
             >
               <mat-icon svgIcon="pencil"></mat-icon>
               <span>Editar</span>
             </button>
-            <button mat-menu-item (click)="onDelete(element)">
+            <button
+              [disabled]="element.status != 'Draft'"
+              mat-menu-item
+              (click)="onDelete(element)"
+            >
               <mat-icon svgIcon="trash-can-outline"></mat-icon>
               <span>Excluir</span>
             </button>
@@ -156,6 +168,7 @@
             </button>
           </mat-chip-row>
           <input
+            [disabled]="articleAuthors.length == 5"
             placeholder="Novo Autor..."
             [matChipInputFor]="chipGrid"
             [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
@@ -173,13 +186,11 @@
         ></textarea>
       </mat-form-field>
       <div style="display: flex; gap: 10px">
-        <button mat-raised-button (click)="createArticle = false">
-          Cancelar
-        </button>
+        <button mat-raised-button (click)="cancel()">Cancelar</button>
         <button
           mat-raised-button
           color="primary"
-          (click)="saveArticle(article); createArticle = false"
+          (click)="handleArticle(article)"
         >
           Salvar
         </button>

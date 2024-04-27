@@ -12,6 +12,7 @@ import { Subscription } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { EvaluationModalComponent } from './evaluation-modal/evaluation-modal.component';
 import { AvaliationModel } from 'src/app/models/avaliation.model';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 export interface DialogData {
   evaluators: UserModel[];
@@ -38,6 +39,7 @@ export class ArticlesComponent implements OnInit, OnDestroy {
     'resume',
     'link',
     'date',
+    'nota',
     'status',
     'options',
   ];
@@ -46,7 +48,11 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
   @ViewChild(MatSort) sort: MatSort = new MatSort();
 
-  constructor(private http: HttpClient, public dialog: MatDialog) {}
+  constructor(
+    private http: HttpClient,
+    public dialog: MatDialog,
+    private snackBar: MatSnackBar
+  ) {}
 
   ngOnInit(): void {
     this.getArticles(this.userSession);
@@ -58,6 +64,7 @@ export class ArticlesComponent implements OnInit, OnDestroy {
 
   ngAfterViewInit() {
     if (this.paginator) {
+      this.paginator.pageSize = 10;
       this.dataSource.paginator = this.paginator;
     }
     this.dataSource.sort = this.sort;
@@ -65,14 +72,14 @@ export class ArticlesComponent implements OnInit, OnDestroy {
 
   getArticles(user: UserModel): void {
     const path: string =
-      user.role == 'admin' ? 'findAll' : `findAllById/${user.id}`;
+      user.role == 'admin' ? 'findAll' : `findAllByUsuId/${user.id}`;
 
     this.getArticlesSub = this.http
       .get(`http://localhost:8080/article/${path}`)
       .subscribe({
         next: (data: any) => {
-          console.log(data);
-          this.dataSource = new MatTableDataSource<Article>(data);
+          this.dataSource.data = data;
+          this.dataSource._updateChangeSubscription();
         },
         error: (error: any) => {
           console.log(error);
@@ -94,9 +101,33 @@ export class ArticlesComponent implements OnInit, OnDestroy {
     this.article = new Article();
   }
 
-  saveArticle(article: Article) {
+  handleArticle(article: Article) {
     article.authors = this.concacAuthors(this.articleAuthors);
+    article.id ? this.updateArticle(article) : this.saveArticle(article);
+  }
+
+  updateArticle(article: Article) {
+    if (this.validateArticle(article)) return;
+    this.getArticlesSub = this.http
+      .post('http://localhost:8080/article/update', article)
+      .subscribe({
+        next: (data: any) => {
+          const index = this.dataSource.data.indexOf(article);
+          this.dataSource.data[index] = data;
+          this.dataSource._updateChangeSubscription();
+          this.createArticle = false;
+          this.article = new Article();
+          this.articleAuthors = [];
+        },
+        error: (error: any) => {
+          console.log(error);
+        },
+      });
+  }
+
+  saveArticle(article: Article) {
     article.user = this.userSession;
+    if (this.validateArticle(article)) return;
     this.getArticlesSub = this.http
       .post('http://localhost:8080/article/save', article)
       .subscribe({
@@ -113,9 +144,32 @@ export class ArticlesComponent implements OnInit, OnDestroy {
       });
   }
 
+  validateArticle(article: Article): boolean {
+    let invalid: boolean = false;
+    if (!article.title) {
+      this.openSnackBar('Título é obrigatório');
+      return (invalid = true);
+    }
+    if (!article.link) {
+      this.openSnackBar('Link é obrigatório');
+      return (invalid = true);
+    }
+    if (!article.authors) {
+      this.openSnackBar('Autores é obrigatório');
+      return (invalid = true);
+    }
+    if (!article.resume) {
+      this.openSnackBar('Resumo é obrigatório');
+      return (invalid = true);
+    }
+    return invalid;
+  }
+
   onEdit(article: Article) {
     this.article = article;
-    console.log(this.article);
+    this.articleAuthors = article.authors
+      .split(',')
+      .map((author) => ({ name: author }));
     this.createArticle = true;
   }
 
@@ -149,7 +203,8 @@ export class ArticlesComponent implements OnInit, OnDestroy {
     const value = (event.value || '').trim();
 
     if (value) {
-      if (this.article.authors.length == 5) {
+      if (this.articleAuthors.length == 5) {
+        this.openSnackBar('Limite de autores atingido');
         return;
       }
       this.articleAuthors.push({ name: value });
@@ -174,7 +229,6 @@ export class ArticlesComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Edit existing fruit
     const index = this.articleAuthors.indexOf(author);
     if (index >= 0) {
       this.articleAuthors[index].name = value;
@@ -201,25 +255,34 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   handleEvaluation(users: UserModel[]) {
     users.forEach((user) => {
       let avaliation: AvaliationModel = new AvaliationModel();
-      avaliation.user_id = user.id;
-      avaliation.article_id = this.article.id;
-      this.article.evaluators.push(avaliation);
+
+      avaliation.user = user;
+      avaliation.article = this.article;
+
+      this.sendEvaluation(avaliation);
     });
-    console.log(this.article);
     this.article.status = 'Pending';
-    this.sendEvaluation(this.article);
+    this.updateArticle(this.article);
   }
 
-  sendEvaluation(article: Article) {
+  sendEvaluation(avaliation: AvaliationModel) {
     this.http
-      .post('http://localhost:8080/article/sendToEvaluation', article)
+      .post('http://localhost:8080/avaliation/save', avaliation)
       .subscribe({
-        next: (data: any) => {
-          this.getArticles(this.userSession);
-        },
+        next: (data: any) => {},
         error: (error: any) => {
           console.log(error);
         },
       });
+  }
+
+  openSnackBar(message: string) {
+    this.snackBar.open(message, 'Fechar');
+  }
+
+  cancel() {
+    this.createArticle = false;
+    this.article = new Article();
+    this.articleAuthors = [];
   }
 }

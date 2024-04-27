@@ -11,14 +11,13 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { Article } from 'src/app/models/article.model';
-import { Author } from 'src/app/models/author.model';
+import { AvaliationModel } from 'src/app/models/avaliation.model';
 import { UserModel } from 'src/app/models/user.model';
 
 export class Rate {
   N1: number = 0;
   N2: number = 0;
   media: number = 0;
-  evaluationId: number = 0;
 }
 @Component({
   selector: 'avaliations',
@@ -34,12 +33,15 @@ export class AvaliationsComponent implements AfterViewInit, OnInit {
     'resume',
     'link',
     'date',
+    'nota',
+    'avaliated',
     'options',
   ];
 
   articleSelected: Article = new Article();
   rate: Rate = new Rate();
   rateArticle: boolean = false;
+  avaliations: AvaliationModel[] = [];
   dataSource: MatTableDataSource<Article> = new MatTableDataSource<Article>();
 
   @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
@@ -53,6 +55,7 @@ export class AvaliationsComponent implements AfterViewInit, OnInit {
 
   ngAfterViewInit() {
     if (this.paginator) {
+      this.paginator.pageSize = 10;
       this.dataSource.paginator = this.paginator;
     }
     this.dataSource.sort = this.sort;
@@ -61,13 +64,19 @@ export class AvaliationsComponent implements AfterViewInit, OnInit {
   getArticlesToAvaliate() {
     this.http
       .get(
-        `http://localhost:8080/evaluation/findAllById/${this.userSession.id}`
+        `http://localhost:8080/avaliation/findAllByUserId/${this.userSession.id}`
       )
       .subscribe({
         next: (data: any) => {
-          console.log(data);
-          const articles: Article[] = data;
-          this.dataSource = new MatTableDataSource<Article>(articles);
+          this.avaliations = data;
+          let articles: Article[] = this.avaliations.map((avaliation) => {
+            avaliation.article.avaliated = avaliation.avaliated;
+            avaliation.article.nota = avaliation.nota;
+            return avaliation.article;
+          });
+
+          this.dataSource.data = articles;
+          this.dataSource._updateChangeSubscription();
         },
         error: (error: any) => {
           console.log(error);
@@ -84,29 +93,36 @@ export class AvaliationsComponent implements AfterViewInit, OnInit {
     }
   }
 
-  concacAuthors(authors: Author[]) {
-    return authors.map((author) => author.name).join(', ');
-  }
-
   saveRate(article: Article) {
     if (this.rate.N1 > 10 || this.rate.N1 < 0) {
-      return this.openSnackBar('N1 tem que estar entre 0 e 10!');
+      return this.openSnackBar('Relevância tem que estar entre 0 e 10!');
     }
     if (this.rate.N2 > 10 || this.rate.N2 < 0) {
-      return this.openSnackBar('N2 tem que estar entre 0 e 10!');
+      return this.openSnackBar('Experiência tem que estar entre 0 e 10!');
     }
 
     this.rate.media = this.rate.N1 * this.rate.N2;
-    this.rate.evaluationId = article.id;
-    // salva a avaliação
-    // this.http.post('http://localhost:3000/evaluation/saveRate', rate).subscribe({
-    //       next: (data: any) => {
-    //         console.log(data);
-    //       },
-    //       error: (error: any) => {
-    //         console.log(error);
-    //       },
-    //     });
+
+    let avaliation = this.avaliations.find(
+      (avaliation) => avaliation.article.id == article.id
+    );
+
+    if (avaliation) {
+      avaliation.nota > 0
+        ? (avaliation.nota += this.rate.media)
+        : (avaliation.nota = this.rate.media);
+    }
+    this.http
+      .post('http://localhost:8080/avaliation/saveRate', avaliation)
+      .subscribe({
+        next: (data: any) => {
+          this.rateArticle = false;
+          this.getArticlesToAvaliate();
+        },
+        error: (error: any) => {
+          console.log(error);
+        },
+      });
   }
 
   openSnackBar(message: string) {

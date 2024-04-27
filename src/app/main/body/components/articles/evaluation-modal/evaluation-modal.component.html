@@ -17,6 +17,7 @@
       </mat-chip-row>
     </mat-chip-grid>
     <input
+      [disabled]="evaluators.length == 3"
       placeholder="Novo Avaliador..."
       #evaluatorInput
       [formControl]="evaluatorCtrl"

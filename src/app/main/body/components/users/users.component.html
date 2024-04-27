@@ -33,7 +33,7 @@
       </ng-container>
       <ng-container matColumnDef="name">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>Nome</th>
-        <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+        <td mat-cell *matCellDef="let row">{{ row.username }}</td>
       </ng-container>
       <ng-container matColumnDef="email">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>E-Mail</th>
@@ -135,7 +135,7 @@
         <button
           mat-raised-button
           color="primary"
-          (click)="saveUser(userSelected); createUser = false"
+          (click)="handleUser(userSelected)"
         >
           Salvar
         </button>

@@ -1,10 +1,15 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, Input, OnInit, ViewChild } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  Input,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { Article } from 'src/app/models/article.model';
-import { Author } from 'src/app/models/author.model';
 import { UserModel } from 'src/app/models/user.model';
 
 @Component({
@@ -12,7 +17,7 @@ import { UserModel } from 'src/app/models/user.model';
   templateUrl: './publish.component.html',
   styleUrls: ['./publish.component.scss'],
 })
-export class PublishComponent implements OnInit {
+export class PublishComponent implements OnInit, AfterViewInit {
   @Input() userSession: UserModel = new UserModel();
 
   articleSelected: Article = new Article();
@@ -23,6 +28,7 @@ export class PublishComponent implements OnInit {
     'resume',
     'link',
     'date',
+    'nota',
     'status',
     'options',
   ];
@@ -37,10 +43,19 @@ export class PublishComponent implements OnInit {
     this.getArticlesToPublish();
   }
 
+  ngAfterViewInit() {
+    if (this.paginator) {
+      this.paginator.pageSize = 10;
+      this.dataSource.paginator = this.paginator;
+    }
+    this.dataSource.sort = this.sort;
+  }
+
   getArticlesToPublish() {
-    this.http.get('https://localhost:5001/api/publish/findAll').subscribe({
+    this.http.get('http://localhost:8080/article/findAllToPublish').subscribe({
       next: (data: any) => {
-        console.log(data);
+        this.dataSource.data = data;
+        this.dataSource._updateChangeSubscription();
       },
       error: (error: any) => {
         console.log(error);
@@ -48,20 +63,13 @@ export class PublishComponent implements OnInit {
     });
   }
 
-  publishArticle() {
-    this.articleSelected.status = 'Published';
-    this.http
-      .post('https://localhost:5001/api/publish/save', this.articleSelected)
-      .subscribe({
-        next: (data: any) => {
-          console.log(data);
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+  handleArticle(article: Article, order: string) {
+    article.status = order;
+    this.http.post('http://localhost:8080/article/save', article).subscribe({
+      next: (data: any) => {},
+      error: (error: any) => {},
+    });
   }
-
   applyFilter(event: Event) {
     const filterValue = (event.target as HTMLInputElement).value;
     this.dataSource.filter = filterValue.trim().toLowerCase();
@@ -82,9 +90,5 @@ export class PublishComponent implements OnInit {
       default:
         return 'gray';
     }
-  }
-
-  concacAuthors(authors: Author[]) {
-    return authors.map((author) => author.name).join(', ');
   }
 }
