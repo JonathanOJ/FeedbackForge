@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import {
   AfterViewInit,
   Component,
@@ -9,6 +9,7 @@ import {
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
+import { token } from 'src/app/app.component';
 import { Article } from 'src/app/models/article.model';
 import { UserModel } from 'src/app/models/user.model';
 
@@ -37,6 +38,11 @@ export class PublishComponent implements OnInit, AfterViewInit {
   @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
   @ViewChild(MatSort) sort: MatSort = new MatSort();
 
+  headers = new HttpHeaders({
+    'Content-Type': 'application/json; charset=UTF-8',
+    Authorization: token,
+  });
+
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
@@ -52,23 +58,31 @@ export class PublishComponent implements OnInit, AfterViewInit {
   }
 
   getArticlesToPublish() {
-    this.http.get('http://localhost:8080/article/findAllToPublish').subscribe({
-      next: (data: any) => {
-        this.dataSource.data = data;
-        this.dataSource._updateChangeSubscription();
-      },
-      error: (error: any) => {
-        console.log(error);
-      },
-    });
+    this.http
+      .get('http://localhost:8080/article/findAllToPublish', {
+        headers: this.headers,
+      })
+      .subscribe({
+        next: (data: any) => {
+          this.dataSource.data = data;
+          this.dataSource._updateChangeSubscription();
+        },
+        error: (error: any) => {
+          console.log(error);
+        },
+      });
   }
 
   handleArticle(article: Article, order: string) {
     article.status = order;
-    this.http.post('http://localhost:8080/article/save', article).subscribe({
-      next: (data: any) => {},
-      error: (error: any) => {},
-    });
+    this.http
+      .post('http://localhost:8080/article/save', article, {
+        headers: this.headers,
+      })
+      .subscribe({
+        next: (data: any) => {},
+        error: (error: any) => {},
+      });
   }
   applyFilter(event: Event) {
     const filterValue = (event.target as HTMLInputElement).value;

@@ -35,6 +35,9 @@ export class MainComponent implements OnInit {
       case 'evaluator':
         this.pageInUse = 'avaliations';
         break;
+      case 'task':
+        this.pageInUse = 'task';
+        break;
       default:
         this.pageInUse = 'articles';
         break;

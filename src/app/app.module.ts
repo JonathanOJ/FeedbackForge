@@ -33,6 +33,7 @@ import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { ReactiveFormsModule } from '@angular/forms';
 import { UserModalComponent } from './main/body/components/users/user-modal/user-modal.component';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { TaskComponent } from './main/body/components/task/task.component';
 
 @NgModule({
   declarations: [
@@ -47,6 +48,7 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
     PublishComponent,
     EvaluationModalComponent,
     UserModalComponent,
+    TaskComponent,
   ],
   imports: [
     BrowserModule,

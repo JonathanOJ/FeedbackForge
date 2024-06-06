@@ -12,10 +12,11 @@ import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
 import { UserModel } from 'src/app/models/user.model';
 import { UserModalComponent } from './user-modal/user-modal.component';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { CookieService } from 'ngx-cookie-service';
+import { token } from 'src/app/app.component';
 
 @Component({
   selector: 'users',
@@ -40,6 +41,10 @@ export class UsersComponent implements AfterViewInit, OnInit, OnDestroy {
     new MatTableDataSource<UserModel>();
 
   getUserSub: Subscription = new Subscription();
+  headers = new HttpHeaders({
+    'Content-Type': 'application/json; charset=UTF-8',
+    Authorization: token,
+  });
 
   @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
   @ViewChild(MatSort) sort: MatSort = new MatSort();
@@ -69,7 +74,7 @@ export class UsersComponent implements AfterViewInit, OnInit, OnDestroy {
 
   getUsers(): void {
     this.getUserSub = this.http
-      .get('http://localhost:8080/user/findAll')
+      .get('http://localhost:8080/user/findAll', { headers: this.headers })
       .subscribe({
         next: (data: any) => {
           this.dataSource.data = data;
@@ -123,37 +128,43 @@ export class UsersComponent implements AfterViewInit, OnInit, OnDestroy {
   updateUser(user: UserModel) {
     if (this.validateUser(user)) return;
 
-    this.http.post('http://localhost:8080/user/update', user).subscribe({
-      next: (data: any) => {
-        const index = this.dataSource.data.findIndex((u) => u.id === user.id);
-        user.id === this.userSession.id
-          ? this.cookies.set('userSession', JSON.stringify(data))
-          : null;
-        this.dataSource.data[index] = data;
-        this.dataSource._updateChangeSubscription();
-        this.userSelected = new UserModel();
-        this.createUser = false;
-      },
-      error: (error: any) => {
-        console.log(error);
-      },
-    });
+    this.http
+      .post('http://localhost:8080/user/update', user, {
+        headers: this.headers,
+      })
+      .subscribe({
+        next: (data: any) => {
+          const index = this.dataSource.data.findIndex((u) => u.id === user.id);
+          user.id === this.userSession.id
+            ? this.cookies.set('userSession', JSON.stringify(data))
+            : null;
+          this.dataSource.data[index] = data;
+          this.dataSource._updateChangeSubscription();
+          this.userSelected = new UserModel();
+          this.createUser = false;
+        },
+        error: (error: any) => {
+          console.log(error);
+        },
+      });
   }
 
   saveUser(user: UserModel) {
     if (this.validateUser(user)) return;
 
-    this.http.post('http://localhost:8080/user/save', user).subscribe({
-      next: (data: any) => {
-        this.dataSource.data.push(data);
-        this.dataSource._updateChangeSubscription();
-        this.userSelected = new UserModel();
-        this.createUser = false;
-      },
-      error: (error: any) => {
-        console.log(error);
-      },
-    });
+    this.http
+      .post('http://localhost:8080/user/save', user, { headers: this.headers })
+      .subscribe({
+        next: (data: any) => {
+          this.dataSource.data.push(data);
+          this.dataSource._updateChangeSubscription();
+          this.userSelected = new UserModel();
+          this.createUser = false;
+        },
+        error: (error: any) => {
+          console.log(error);
+        },
+      });
   }
 
   onEdit(user: UserModel) {
@@ -162,16 +173,20 @@ export class UsersComponent implements AfterViewInit, OnInit, OnDestroy {
   }
 
   onDelete(user: UserModel) {
-    this.http.delete(`http://localhost:8080/user/${user.id}`).subscribe({
-      next: (data: any) => {
-        const index = this.dataSource.data.findIndex((u) => u.id === user.id);
-        this.dataSource.data.splice(index, 1);
-        this.dataSource._updateChangeSubscription();
-      },
-      error: (error: any) => {
-        console.log(error);
-      },
-    });
+    this.http
+      .delete(`http://localhost:8080/user/${user.id}`, {
+        headers: this.headers,
+      })
+      .subscribe({
+        next: (data: any) => {
+          const index = this.dataSource.data.findIndex((u) => u.id === user.id);
+          this.dataSource.data.splice(index, 1);
+          this.dataSource._updateChangeSubscription();
+        },
+        error: (error: any) => {
+          console.log(error);
+        },
+      });
   }
 
   openDialog(user: UserModel): void {

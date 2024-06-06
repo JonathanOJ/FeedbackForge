@@ -14,8 +14,9 @@ import { FormControl } from '@angular/forms';
 import { Observable, Subscription, map, startWith } from 'rxjs';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { token } from 'src/app/app.component';
 
 @Component({
   selector: 'app-evaluation-modal',
@@ -28,6 +29,10 @@ export class EvaluationModalComponent implements OnInit, OnDestroy {
   filteredEvaluators: Observable<UserModel[]>;
   evaluators: UserModel[] = [];
   allEvaluator: UserModel[] = [];
+  headers = new HttpHeaders({
+    'Content-Type': 'application/json; charset=UTF-8',
+    Authorization: token,
+  });
 
   getEvaluatorsSub: Subscription = new Subscription();
 
@@ -57,7 +62,9 @@ export class EvaluationModalComponent implements OnInit, OnDestroy {
 
   getAvaluators() {
     this.http
-      .get('http://localhost:8080/user/findAllByRole/evaluator')
+      .get('http://localhost:8080/user/findAllByRole/evaluator', {
+        headers: this.headers,
+      })
       .subscribe({
         next: (data: any) => {
           this.allEvaluator = data;

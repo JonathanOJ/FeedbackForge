@@ -1,6 +1,6 @@
 import { Component, OnDestroy } from '@angular/core';
 import { UserModel } from '../models/user.model';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { CookieService } from 'ngx-cookie-service';
 import { Router } from '@angular/router';
@@ -72,15 +72,21 @@ export class LoginComponent implements OnDestroy {
   }
 
   login() {
+    const body = {
+      password: this.user.password,
+      username: this.user.email,
+    };
+
     this.loginSub = this.httpClient
-      .post('http://localhost:8080/user/login', this.user)
+      .post('http://localhost:8080/login', body)
       .subscribe({
         next: (data: any) => {
+          console.log(data);
           this.cookies.set('userSession', JSON.stringify(data));
           this.router.navigate(['/home']);
         },
         error: (error: any) => {
-          console.log(error);
+          this.openSnackBar(error.error);
         },
       });
   }

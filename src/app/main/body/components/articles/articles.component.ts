@@ -7,12 +7,13 @@ import { UserModel } from 'src/app/models/user.model';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { MatChipEditedEvent, MatChipInputEvent } from '@angular/material/chips';
 import { Author } from 'src/app/models/author.model';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
 import { EvaluationModalComponent } from './evaluation-modal/evaluation-modal.component';
 import { AvaliationModel } from 'src/app/models/avaliation.model';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { token } from 'src/app/app.component';
 
 export interface DialogData {
   evaluators: UserModel[];
@@ -30,6 +31,10 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   articleAuthors: Author[] = [];
   addOnBlur = true;
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
+  headers = new HttpHeaders({
+    'Content-Type': 'application/json; charset=UTF-8',
+    Authorization: token,
+  });
 
   getArticlesSub: Subscription = new Subscription();
 
@@ -71,11 +76,10 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   }
 
   getArticles(user: UserModel): void {
-    const path: string =
-      user.role == 'admin' ? 'findAll' : `findAllByUsuId/${user.id}`;
-
     this.getArticlesSub = this.http
-      .get(`http://localhost:8080/article/${path}`)
+      .get(`http://localhost:8080/article/findAll/${user.id}`, {
+        headers: this.headers,
+      })
       .subscribe({
         next: (data: any) => {
           this.dataSource.data = data;
@@ -109,7 +113,9 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   updateArticle(article: Article) {
     if (this.validateArticle(article)) return;
     this.getArticlesSub = this.http
-      .post('http://localhost:8080/article/update', article)
+      .post('http://localhost:8080/article/update', article, {
+        headers: this.headers,
+      })
       .subscribe({
         next: (data: any) => {
           const index = this.dataSource.data.indexOf(article);
@@ -129,7 +135,9 @@ export class ArticlesComponent implements OnInit, OnDestroy {
     article.user = this.userSession;
     if (this.validateArticle(article)) return;
     this.getArticlesSub = this.http
-      .post('http://localhost:8080/article/save', article)
+      .post('http://localhost:8080/article/save', article, {
+        headers: this.headers,
+      })
       .subscribe({
         next: (data: any) => {
           this.dataSource.data.push(data);
@@ -174,16 +182,20 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   }
 
   onDelete(article: Article) {
-    this.http.delete(`http://localhost:8080/article/${article.id}`).subscribe({
-      next: (data: any) => {
-        const index = this.dataSource.data.indexOf(article);
-        this.dataSource.data.splice(index, 1);
-        this.dataSource._updateChangeSubscription();
-      },
-      error: (error: any) => {
-        console.log(error);
-      },
-    });
+    this.http
+      .delete(`http://localhost:8080/article/${article.id}`, {
+        headers: this.headers,
+      })
+      .subscribe({
+        next: (data: any) => {
+          const index = this.dataSource.data.indexOf(article);
+          this.dataSource.data.splice(index, 1);
+          this.dataSource._updateChangeSubscription();
+        },
+        error: (error: any) => {
+          console.log(error);
+        },
+      });
   }
 
   getColorStatus(status: string) {
@@ -267,7 +279,9 @@ export class ArticlesComponent implements OnInit, OnDestroy {
 
   sendEvaluation(avaliation: AvaliationModel) {
     this.http
-      .post('http://localhost:8080/avaliation/save', avaliation)
+      .post('http://localhost:8080/avaliation/save', avaliation, {
+        headers: this.headers,
+      })
       .subscribe({
         next: (data: any) => {},
         error: (error: any) => {
