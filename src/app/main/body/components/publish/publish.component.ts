@@ -2,23 +2,27 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import {
   AfterViewInit,
   Component,
+  inject,
   Input,
+  OnDestroy,
   OnInit,
   ViewChild,
 } from '@angular/core';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
-import { token } from 'src/app/app.component';
+import { Subscription } from 'rxjs';
+// import { token } from 'src/app/app.component';
 import { Article } from 'src/app/models/article.model';
 import { UserModel } from 'src/app/models/user.model';
+import { ApiService } from 'src/app/services/api.service';
 
 @Component({
   selector: 'publish',
   templateUrl: './publish.component.html',
   styleUrls: ['./publish.component.scss'],
 })
-export class PublishComponent implements OnInit, AfterViewInit {
+export class PublishComponent implements OnInit, AfterViewInit, OnDestroy {
   @Input() userSession: UserModel = new UserModel();
 
   articleSelected: Article = new Article();
@@ -38,12 +42,11 @@ export class PublishComponent implements OnInit, AfterViewInit {
   @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
   @ViewChild(MatSort) sort: MatSort = new MatSort();
 
-  headers = new HttpHeaders({
-    'Content-Type': 'application/json; charset=UTF-8',
-    Authorization: token,
-  });
+  apiService = inject(ApiService);
 
-  constructor(private http: HttpClient) {}
+  getArticlesToPublishSub: Subscription = new Subscription();
+  handleArticleSub: Subscription = new Subscription();
+  constructor() {}
 
   ngOnInit(): void {
     this.getArticlesToPublish();
@@ -57,11 +60,16 @@ export class PublishComponent implements OnInit, AfterViewInit {
     this.dataSource.sort = this.sort;
   }
 
+  ngOnDestroy(): void {
+    this.getArticlesToPublishSub
+      ? this.getArticlesToPublishSub.unsubscribe()
+      : null;
+    this.handleArticleSub ? this.handleArticleSub.unsubscribe() : null;
+  }
+
   getArticlesToPublish() {
-    this.http
-      .get('http://localhost:8080/article/findAllToPublish', {
-        headers: this.headers,
-      })
+    this.getArticlesToPublishSub = this.apiService
+      .getArticlesToPublish()
       .subscribe({
         next: (data: any) => {
           this.dataSource.data = data;
@@ -75,14 +83,10 @@ export class PublishComponent implements OnInit, AfterViewInit {
 
   handleArticle(article: Article, order: string) {
     article.status = order;
-    this.http
-      .post('http://localhost:8080/article/save', article, {
-        headers: this.headers,
-      })
-      .subscribe({
-        next: (data: any) => {},
-        error: (error: any) => {},
-      });
+    this.handleArticleSub = this.apiService.saveArticle(article).subscribe({
+      next: (data: any) => {},
+      error: (error: any) => {},
+    });
   }
   applyFilter(event: Event) {
     const filterValue = (event.target as HTMLInputElement).value;

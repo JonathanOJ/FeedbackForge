@@ -1,8 +1,10 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import {
   AfterViewInit,
   Component,
+  inject,
   Input,
+  OnDestroy,
   OnInit,
   ViewChild,
 } from '@angular/core';
@@ -10,10 +12,11 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
-import { token } from 'src/app/app.component';
+import { Subscription } from 'rxjs';
 import { Article } from 'src/app/models/article.model';
 import { AvaliationModel } from 'src/app/models/avaliation.model';
 import { UserModel } from 'src/app/models/user.model';
+import { ApiService } from 'src/app/services/api.service';
 
 export class Rate {
   N1: number = 0;
@@ -25,7 +28,7 @@ export class Rate {
   templateUrl: './avaliations.component.html',
   styleUrls: ['./avaliations.component.scss'],
 })
-export class AvaliationsComponent implements AfterViewInit, OnInit {
+export class AvaliationsComponent implements AfterViewInit, OnInit, OnDestroy {
   @Input() userSession: UserModel = new UserModel();
 
   displayedColumns: string[] = [
@@ -44,18 +47,26 @@ export class AvaliationsComponent implements AfterViewInit, OnInit {
   rateArticle: boolean = false;
   avaliations: AvaliationModel[] = [];
   dataSource: MatTableDataSource<Article> = new MatTableDataSource<Article>();
-  headers = new HttpHeaders({
-    'Content-Type': 'application/json; charset=UTF-8',
-    Authorization: token,
-  });
 
   @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
   @ViewChild(MatSort) sort: MatSort = new MatSort();
+
+  private apiService = inject(ApiService);
+
+  getArticlesToAvaliateSub: Subscription = new Subscription();
+  saveRateSub: Subscription = new Subscription();
 
   constructor(private snackBar: MatSnackBar, private http: HttpClient) {}
 
   ngOnInit(): void {
     this.getArticlesToAvaliate();
+  }
+
+  ngOnDestroy(): void {
+    this.getArticlesToAvaliateSub
+      ? this.getArticlesToAvaliateSub.unsubscribe()
+      : null;
+    this.saveRateSub ? this.saveRateSub.unsubscribe() : null;
   }
 
   ngAfterViewInit() {
@@ -67,11 +78,8 @@ export class AvaliationsComponent implements AfterViewInit, OnInit {
   }
 
   getArticlesToAvaliate() {
-    this.http
-      .get(
-        `http://localhost:8080/avaliation/findAllByUserId/${this.userSession.id}`,
-        { headers: this.headers }
-      )
+    this.getArticlesToAvaliateSub = this.apiService
+      .getAvaliationByUserId(this.userSession.id)
       .subscribe({
         next: (data: any) => {
           this.avaliations = data;
@@ -118,19 +126,15 @@ export class AvaliationsComponent implements AfterViewInit, OnInit {
         ? (avaliation.nota += this.rate.media)
         : (avaliation.nota = this.rate.media);
     }
-    this.http
-      .post('http://localhost:8080/avaliation/saveRate', avaliation, {
-        headers: this.headers,
-      })
-      .subscribe({
-        next: (data: any) => {
-          this.rateArticle = false;
-          this.getArticlesToAvaliate();
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.saveRateSub = this.apiService.saveRate(avaliation).subscribe({
+      next: (data: any) => {
+        this.rateArticle = false;
+        this.getArticlesToAvaliate();
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   openSnackBar(message: string) {

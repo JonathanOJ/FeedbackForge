@@ -1,6 +1,7 @@
 import {
   AfterViewInit,
   Component,
+  inject,
   Input,
   OnDestroy,
   OnInit,
@@ -16,7 +17,8 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { CookieService } from 'ngx-cookie-service';
-import { token } from 'src/app/app.component';
+import { ApiService } from 'src/app/services/api.service';
+// import { token } from 'src/app/app.component';
 
 @Component({
   selector: 'users',
@@ -40,18 +42,23 @@ export class UsersComponent implements AfterViewInit, OnInit, OnDestroy {
   dataSource: MatTableDataSource<UserModel> =
     new MatTableDataSource<UserModel>();
 
-  getUserSub: Subscription = new Subscription();
   headers = new HttpHeaders({
     'Content-Type': 'application/json; charset=UTF-8',
-    Authorization: token,
+    Authorization: '',
   });
 
   @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
   @ViewChild(MatSort) sort: MatSort = new MatSort();
 
+  apiService = inject(ApiService);
+
+  getUserSub: Subscription = new Subscription();
+  saveUserSub: Subscription = new Subscription();
+  updateUserSub: Subscription = new Subscription();
+  onDeleteSub: Subscription = new Subscription();
+
   constructor(
     public dialog: MatDialog,
-    private http: HttpClient,
     private snackBar: MatSnackBar,
     private cookies: CookieService
   ) {}
@@ -70,20 +77,21 @@ export class UsersComponent implements AfterViewInit, OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.getUserSub ? this.getUserSub.unsubscribe() : null;
+    this.saveUserSub ? this.saveUserSub.unsubscribe() : null;
+    this.updateUserSub ? this.updateUserSub.unsubscribe() : null;
+    this.onDeleteSub ? this.onDeleteSub.unsubscribe() : null;
   }
 
   getUsers(): void {
-    this.getUserSub = this.http
-      .get('http://localhost:8080/user/findAll', { headers: this.headers })
-      .subscribe({
-        next: (data: any) => {
-          this.dataSource.data = data;
-          this.dataSource._updateChangeSubscription();
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.getUserSub = this.apiService.getUsers().subscribe({
+      next: (data: any) => {
+        this.dataSource.data = data;
+        this.dataSource._updateChangeSubscription();
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   applyFilter(event: Event) {
@@ -128,43 +136,37 @@ export class UsersComponent implements AfterViewInit, OnInit, OnDestroy {
   updateUser(user: UserModel) {
     if (this.validateUser(user)) return;
 
-    this.http
-      .post('http://localhost:8080/user/update', user, {
-        headers: this.headers,
-      })
-      .subscribe({
-        next: (data: any) => {
-          const index = this.dataSource.data.findIndex((u) => u.id === user.id);
-          user.id === this.userSession.id
-            ? this.cookies.set('userSession', JSON.stringify(data))
-            : null;
-          this.dataSource.data[index] = data;
-          this.dataSource._updateChangeSubscription();
-          this.userSelected = new UserModel();
-          this.createUser = false;
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.updateUserSub = this.apiService.updateUser(user).subscribe({
+      next: (data: any) => {
+        const index = this.dataSource.data.findIndex((u) => u.id === user.id);
+        user.id === this.userSession.id
+          ? this.cookies.set('userSession', JSON.stringify(data))
+          : null;
+        this.dataSource.data[index] = data;
+        this.dataSource._updateChangeSubscription();
+        this.userSelected = new UserModel();
+        this.createUser = false;
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   saveUser(user: UserModel) {
     if (this.validateUser(user)) return;
 
-    this.http
-      .post('http://localhost:8080/user/save', user, { headers: this.headers })
-      .subscribe({
-        next: (data: any) => {
-          this.dataSource.data.push(data);
-          this.dataSource._updateChangeSubscription();
-          this.userSelected = new UserModel();
-          this.createUser = false;
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.saveUserSub = this.apiService.saveUser(user).subscribe({
+      next: (data: any) => {
+        this.dataSource.data.push(data);
+        this.dataSource._updateChangeSubscription();
+        this.userSelected = new UserModel();
+        this.createUser = false;
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   onEdit(user: UserModel) {
@@ -173,20 +175,16 @@ export class UsersComponent implements AfterViewInit, OnInit, OnDestroy {
   }
 
   onDelete(user: UserModel) {
-    this.http
-      .delete(`http://localhost:8080/user/${user.id}`, {
-        headers: this.headers,
-      })
-      .subscribe({
-        next: (data: any) => {
-          const index = this.dataSource.data.findIndex((u) => u.id === user.id);
-          this.dataSource.data.splice(index, 1);
-          this.dataSource._updateChangeSubscription();
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.onDeleteSub = this.apiService.deleteUser(user.id).subscribe({
+      next: (data: any) => {
+        const index = this.dataSource.data.findIndex((u) => u.id === user.id);
+        this.dataSource.data.splice(index, 1);
+        this.dataSource._updateChangeSubscription();
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   openDialog(user: UserModel): void {

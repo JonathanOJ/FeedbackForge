@@ -1,6 +1,7 @@
 import {
   AfterViewInit,
   Component,
+  inject,
   Input,
   OnDestroy,
   OnInit,
@@ -14,9 +15,10 @@ import { TaskModel } from 'src/app/models/task.model';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { token } from 'src/app/app.component';
+// import { token } from 'src/app/app.component';
 import { UserModel } from 'src/app/models/user.model';
 import { TaskItemModel } from 'src/app/models/taskItem.model';
+import { ApiService } from 'src/app/services/api.service';
 
 @Component({
   selector: 'task',
@@ -48,20 +50,17 @@ export class TaskComponent implements AfterViewInit, OnInit, OnDestroy {
 
   getTaskSub: Subscription = new Subscription();
   getUserSub: Subscription = new Subscription();
-  headers = new HttpHeaders({
-    'Content-Type': 'application/json; charset=UTF-8',
-    Authorization: token,
-  });
+  updateTaskSub: Subscription = new Subscription();
+  saveTaskSub: Subscription = new Subscription();
+  onDeleteSub: Subscription = new Subscription();
+
   responsibles: UserModel[] = [];
+  apiService = inject(ApiService);
 
   @ViewChild(MatPaginator) paginator: MatPaginator | undefined;
   @ViewChild(MatSort) sort: MatSort = new MatSort();
 
-  constructor(
-    public dialog: MatDialog,
-    private http: HttpClient,
-    private snackBar: MatSnackBar
-  ) {}
+  constructor(public dialog: MatDialog, private snackBar: MatSnackBar) {}
 
   ngOnInit(): void {
     this.getTasks();
@@ -82,26 +81,25 @@ export class TaskComponent implements AfterViewInit, OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.getTaskSub ? this.getTaskSub.unsubscribe() : null;
     this.getUserSub ? this.getUserSub.unsubscribe() : null;
+    this.updateTaskSub ? this.updateTaskSub.unsubscribe() : null;
+    this.saveTaskSub ? this.saveTaskSub.unsubscribe() : null;
+    this.onDeleteSub ? this.onDeleteSub.unsubscribe() : null;
   }
 
   getUsers() {
-    this.getUserSub = this.http
-      .get('http://localhost:8080/user/findAll', { headers: this.headers })
-      .subscribe({
-        next: (data: any) => {
-          this.responsibles = data;
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.getUserSub = this.apiService.getUsers().subscribe({
+      next: (data: any) => {
+        this.responsibles = data;
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   getTasks(): void {
-    this.getTaskSub = this.http
-      .get('http://localhost:8080/task/findAll/' + this.userSession.id, {
-        headers: this.headers,
-      })
+    this.getTaskSub = this.apiService
+      .getTasksByUser(this.userSession.id)
       .subscribe({
         next: (data: any) => {
           this.dataSource.data = data;
@@ -156,22 +154,18 @@ export class TaskComponent implements AfterViewInit, OnInit, OnDestroy {
     if (this.validateTask(task)) return;
     task.itens = JSON.stringify(this.taskItens);
 
-    this.http
-      .post('http://localhost:8080/task/update', task, {
-        headers: this.headers,
-      })
-      .subscribe({
-        next: (data: any) => {
-          const index = this.dataSource.data.findIndex((u) => u.id === task.id);
-          this.dataSource.data[index] = data;
-          this.dataSource._updateChangeSubscription();
-          this.taskSelected = new TaskModel();
-          this.createTask = false;
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.updateTaskSub = this.apiService.updateTask(task).subscribe({
+      next: (data: any) => {
+        const index = this.dataSource.data.findIndex((u) => u.id === task.id);
+        this.dataSource.data[index] = data;
+        this.dataSource._updateChangeSubscription();
+        this.taskSelected = new TaskModel();
+        this.createTask = false;
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   handleChangeStatusTask(task: TaskModel) {
@@ -184,19 +178,17 @@ export class TaskComponent implements AfterViewInit, OnInit, OnDestroy {
     task.itens = JSON.stringify(this.taskItens);
     if (this.validateTask(task)) return;
 
-    this.http
-      .post('http://localhost:8080/task/save', task, { headers: this.headers })
-      .subscribe({
-        next: (data: any) => {
-          this.dataSource.data.push(data);
-          this.dataSource._updateChangeSubscription();
-          this.taskSelected = new TaskModel();
-          this.createTask = false;
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.saveTaskSub = this.apiService.saveTask(task).subscribe({
+      next: (data: any) => {
+        this.dataSource.data.push(data);
+        this.dataSource._updateChangeSubscription();
+        this.taskSelected = new TaskModel();
+        this.createTask = false;
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   onEdit(task: TaskModel) {
@@ -208,20 +200,16 @@ export class TaskComponent implements AfterViewInit, OnInit, OnDestroy {
   }
 
   onDelete(task: TaskModel) {
-    this.http
-      .delete(`http://localhost:8080/task/${task.id}`, {
-        headers: this.headers,
-      })
-      .subscribe({
-        next: (data: any) => {
-          const index = this.dataSource.data.findIndex((u) => u.id === task.id);
-          this.dataSource.data.splice(index, 1);
-          this.dataSource._updateChangeSubscription();
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.onDeleteSub = this.apiService.deleteTask(task.id).subscribe({
+      next: (data: any) => {
+        const index = this.dataSource.data.findIndex((u) => u.id === task.id);
+        this.dataSource.data.splice(index, 1);
+        this.dataSource._updateChangeSubscription();
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   removeItem(index: number) {

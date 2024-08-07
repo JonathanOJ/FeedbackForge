@@ -1,6 +1,7 @@
 import {
   Component,
   ElementRef,
+  inject,
   Inject,
   OnDestroy,
   OnInit,
@@ -14,9 +15,9 @@ import { FormControl } from '@angular/forms';
 import { Observable, Subscription, map, startWith } from 'rxjs';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { token } from 'src/app/app.component';
+import { ApiService } from 'src/app/services/api.service';
 
 @Component({
   selector: 'app-evaluation-modal',
@@ -29,10 +30,8 @@ export class EvaluationModalComponent implements OnInit, OnDestroy {
   filteredEvaluators: Observable<UserModel[]>;
   evaluators: UserModel[] = [];
   allEvaluator: UserModel[] = [];
-  headers = new HttpHeaders({
-    'Content-Type': 'application/json; charset=UTF-8',
-    Authorization: token,
-  });
+
+  private apiService = inject(ApiService);
 
   getEvaluatorsSub: Subscription = new Subscription();
 
@@ -61,18 +60,14 @@ export class EvaluationModalComponent implements OnInit, OnDestroy {
   }
 
   getAvaluators() {
-    this.http
-      .get('http://localhost:8080/user/findAllByRole/evaluator', {
-        headers: this.headers,
-      })
-      .subscribe({
-        next: (data: any) => {
-          this.allEvaluator = data;
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.getEvaluatorsSub = this.apiService.getEvaluators().subscribe({
+      next: (data: any) => {
+        this.allEvaluator = data;
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   add(event: MatChipInputEvent): void {

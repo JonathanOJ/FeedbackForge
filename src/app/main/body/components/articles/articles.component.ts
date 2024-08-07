@@ -1,4 +1,11 @@
-import { Component, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import {
+  Component,
+  inject,
+  Input,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatTableDataSource } from '@angular/material/table';
@@ -13,7 +20,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { EvaluationModalComponent } from './evaluation-modal/evaluation-modal.component';
 import { AvaliationModel } from 'src/app/models/avaliation.model';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { token } from 'src/app/app.component';
+import { ApiService } from 'src/app/services/api.service';
 
 export interface DialogData {
   evaluators: UserModel[];
@@ -26,17 +33,19 @@ export interface DialogData {
 export class ArticlesComponent implements OnInit, OnDestroy {
   @Input() userSession: UserModel = new UserModel();
 
+  private apiService = inject(ApiService);
+
   createArticle: boolean = false;
   article: Article = new Article();
   articleAuthors: Author[] = [];
   addOnBlur = true;
   readonly separatorKeysCodes = [ENTER, COMMA] as const;
-  headers = new HttpHeaders({
-    'Content-Type': 'application/json; charset=UTF-8',
-    Authorization: token,
-  });
 
   getArticlesSub: Subscription = new Subscription();
+  onDeleteSub: Subscription = new Subscription();
+  sendEvaluationSub: Subscription = new Subscription();
+  updateArticleSub: Subscription = new Subscription();
+  saveArticleSub: Subscription = new Subscription();
 
   displayedColumns: string[] = [
     'title',
@@ -65,6 +74,10 @@ export class ArticlesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.getArticlesSub ? this.getArticlesSub.unsubscribe() : null;
+    this.onDeleteSub ? this.onDeleteSub.unsubscribe() : null;
+    this.sendEvaluationSub ? this.sendEvaluationSub.unsubscribe : null;
+    this.updateArticleSub ? this.updateArticleSub.unsubscribe() : null;
+    this.saveArticleSub ? this.saveArticleSub.unsubscribe() : null;
   }
 
   ngAfterViewInit() {
@@ -76,19 +89,15 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   }
 
   getArticles(user: UserModel): void {
-    this.getArticlesSub = this.http
-      .get(`http://localhost:8080/article/findAll/${user.id}`, {
-        headers: this.headers,
-      })
-      .subscribe({
-        next: (data: any) => {
-          this.dataSource.data = data;
-          this.dataSource._updateChangeSubscription();
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.getArticlesSub = this.apiService.getArticles(user.id).subscribe({
+      next: (data: any) => {
+        this.dataSource.data = data;
+        this.dataSource._updateChangeSubscription();
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   applyFilter(event: Event) {
@@ -112,44 +121,37 @@ export class ArticlesComponent implements OnInit, OnDestroy {
 
   updateArticle(article: Article) {
     if (this.validateArticle(article)) return;
-    this.getArticlesSub = this.http
-      .post('http://localhost:8080/article/update', article, {
-        headers: this.headers,
-      })
-      .subscribe({
-        next: (data: any) => {
-          const index = this.dataSource.data.indexOf(article);
-          this.dataSource.data[index] = data;
-          this.dataSource._updateChangeSubscription();
-          this.createArticle = false;
-          this.article = new Article();
-          this.articleAuthors = [];
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.updateArticleSub = this.apiService.updateArticle(article).subscribe({
+      next: (data: any) => {
+        const index = this.dataSource.data.indexOf(article);
+        this.dataSource.data[index] = data;
+        this.dataSource._updateChangeSubscription();
+        this.createArticle = false;
+        this.article = new Article();
+        this.articleAuthors = [];
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   saveArticle(article: Article) {
     article.user = this.userSession;
+
     if (this.validateArticle(article)) return;
-    this.getArticlesSub = this.http
-      .post('http://localhost:8080/article/save', article, {
-        headers: this.headers,
-      })
-      .subscribe({
-        next: (data: any) => {
-          this.dataSource.data.push(data);
-          this.dataSource._updateChangeSubscription();
-          this.createArticle = false;
-          this.article = new Article();
-          this.articleAuthors = [];
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.saveArticleSub = this.apiService.saveArticle(article).subscribe({
+      next: (data: any) => {
+        this.dataSource.data.push(data);
+        this.dataSource._updateChangeSubscription();
+        this.createArticle = false;
+        this.article = new Article();
+        this.articleAuthors = [];
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   validateArticle(article: Article): boolean {
@@ -182,20 +184,16 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   }
 
   onDelete(article: Article) {
-    this.http
-      .delete(`http://localhost:8080/article/${article.id}`, {
-        headers: this.headers,
-      })
-      .subscribe({
-        next: (data: any) => {
-          const index = this.dataSource.data.indexOf(article);
-          this.dataSource.data.splice(index, 1);
-          this.dataSource._updateChangeSubscription();
-        },
-        error: (error: any) => {
-          console.log(error);
-        },
-      });
+    this.onDeleteSub = this.apiService.deleteArticle(article.id).subscribe({
+      next: (data: any) => {
+        const index = this.dataSource.data.indexOf(article);
+        this.dataSource.data.splice(index, 1);
+        this.dataSource._updateChangeSubscription();
+      },
+      error: (error: any) => {
+        console.log(error);
+      },
+    });
   }
 
   getColorStatus(status: string) {
@@ -278,10 +276,8 @@ export class ArticlesComponent implements OnInit, OnDestroy {
   }
 
   sendEvaluation(avaliation: AvaliationModel) {
-    this.http
-      .post('http://localhost:8080/avaliation/save', avaliation, {
-        headers: this.headers,
-      })
+    this.sendEvaluationSub = this.apiService
+      .saveAvaliation(avaliation)
       .subscribe({
         next: (data: any) => {},
         error: (error: any) => {

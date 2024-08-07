@@ -1,10 +1,11 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, inject, OnDestroy } from '@angular/core';
 import { UserModel } from '../models/user.model';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { CookieService } from 'ngx-cookie-service';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { ApiService } from '../services/api.service';
 
 @Component({
   selector: 'app-login',
@@ -18,6 +19,13 @@ export class LoginComponent implements OnDestroy {
   confirmPassword: string = '';
   loginSub: Subscription = new Subscription();
   createUserSub: Subscription = new Subscription();
+
+  headers = new HttpHeaders({
+    'Content-Type': 'application/json; charset=UTF-8',
+    Authorization: '',
+  });
+
+  private apiService = inject(ApiService);
 
   constructor(
     private httpClient: HttpClient,
@@ -59,34 +67,66 @@ export class LoginComponent implements OnDestroy {
 
   handleCreateUser() {
     this.createUserSub = this.httpClient
-      .post('http://localhost:8080/user/save', this.user)
+      .post('http://localhost:8080/user/register', this.user, {
+        observe: 'response',
+      })
       .subscribe({
-        next: (data: any) => {
-          this.cookies.set('userSession', JSON.stringify(data));
-          this.router.navigate(['/home']);
+        next: (response: HttpResponse<any>) => {
+          const token = 'Bearer ' + response.body.token;
+
+          if (token) {
+            this.cookies.check('token') ? this.cookies.delete('token') : '';
+            this.cookies.check('userSession')
+              ? this.cookies.delete('userSession')
+              : '';
+
+            this.cookies.set('token', token);
+            this.cookies.set('userSession', JSON.stringify(response.body.user));
+
+            this.apiService.setHeaders(token);
+
+            setTimeout(() => {
+              this.router.navigate(['/home']);
+            }, 250);
+          }
         },
         error: (error: any) => {
-          console.log(error);
+          typeof error.error === 'string'
+            ? this.openSnackBar(error.error)
+            : this.openSnackBar('Erro ao registrar usuário');
         },
       });
   }
 
   login() {
-    const body = {
-      password: this.user.password,
-      username: this.user.email,
-    };
-
     this.loginSub = this.httpClient
-      .post('http://localhost:8080/login', body)
+      .post('http://localhost:8080/user/login', this.user, {
+        observe: 'response',
+      })
       .subscribe({
-        next: (data: any) => {
-          console.log(data);
-          this.cookies.set('userSession', JSON.stringify(data));
-          this.router.navigate(['/home']);
+        next: (response: HttpResponse<any>) => {
+          const token = 'Bearer ' + response.body.token;
+
+          if (token) {
+            this.cookies.check('token') ? this.cookies.delete('token') : '';
+            this.cookies.check('userSession')
+              ? this.cookies.delete('userSession')
+              : '';
+
+            this.cookies.set('token', token);
+            this.cookies.set('userSession', JSON.stringify(response.body.user));
+
+            this.apiService.setHeaders(token);
+
+            setTimeout(() => {
+              this.router.navigate(['/home']);
+            }, 250);
+          }
         },
         error: (error: any) => {
-          this.openSnackBar(error.error);
+          typeof error.error === 'string'
+            ? this.openSnackBar(error.error)
+            : this.openSnackBar('Erro ao fazer login');
         },
       });
   }
